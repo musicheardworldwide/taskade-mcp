@@ -1,0 +1,250 @@
+# File generated from our OpenAPI spec by Stainless. See CONTRIBUTING.md for details.
+
+from __future__ import annotations
+
+import httpx
+
+from ..._types import NOT_GIVEN, Body, Query, Headers, NotGiven
+from ..._utils import maybe_transform, async_maybe_transform
+from ..._compat import cached_property
+from ..._resource import SyncAPIResource, AsyncAPIResource
+from ..._response import (
+    to_raw_response_wrapper,
+    to_streamed_response_wrapper,
+    async_to_raw_response_wrapper,
+    async_to_streamed_response_wrapper,
+)
+from ..._base_client import make_request_options
+from ...types.agents import public_agent_update_params
+from ...types.agents.public_agent_update_response import PublicAgentUpdateResponse
+from ...types.agents.public_agent_retrieve_response import PublicAgentRetrieveResponse
+
+__all__ = ["PublicAgentResource", "AsyncPublicAgentResource"]
+
+
+class PublicAgentResource(SyncAPIResource):
+    @cached_property
+    def with_raw_response(self) -> PublicAgentResourceWithRawResponse:
+        """
+        This property can be used as a prefix for any HTTP method call to return
+        the raw response object instead of the parsed content.
+
+        For more information, see https://www.github.com/stainless-sdks/taskade-python#accessing-raw-response-data-eg-headers
+        """
+        return PublicAgentResourceWithRawResponse(self)
+
+    @cached_property
+    def with_streaming_response(self) -> PublicAgentResourceWithStreamingResponse:
+        """
+        An alternative to `.with_raw_response` that doesn't eagerly read the response body.
+
+        For more information, see https://www.github.com/stainless-sdks/taskade-python#with_streaming_response
+        """
+        return PublicAgentResourceWithStreamingResponse(self)
+
+    def retrieve(
+        self,
+        agent_id: str,
+        *,
+        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
+        # The extra values given here take precedence over values defined on the client or passed to this method.
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> PublicAgentRetrieveResponse:
+        """
+        Get public agent
+
+        Args:
+          extra_headers: Send extra headers
+
+          extra_query: Add additional query parameters to the request
+
+          extra_body: Add additional JSON properties to the request
+
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        if not agent_id:
+            raise ValueError(f"Expected a non-empty value for `agent_id` but received {agent_id!r}")
+        return self._get(
+            f"/agents/{agent_id}/public-agent",
+            options=make_request_options(
+                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+            ),
+            cast_to=PublicAgentRetrieveResponse,
+        )
+
+    def update(
+        self,
+        agent_id: str,
+        *,
+        preferences: public_agent_update_params.Preferences,
+        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
+        # The extra values given here take precedence over values defined on the client or passed to this method.
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> PublicAgentUpdateResponse:
+        """
+        Update public agent
+
+        Args:
+          extra_headers: Send extra headers
+
+          extra_query: Add additional query parameters to the request
+
+          extra_body: Add additional JSON properties to the request
+
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        if not agent_id:
+            raise ValueError(f"Expected a non-empty value for `agent_id` but received {agent_id!r}")
+        return self._patch(
+            f"/agents/{agent_id}/public-agent",
+            body=maybe_transform({"preferences": preferences}, public_agent_update_params.PublicAgentUpdateParams),
+            options=make_request_options(
+                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+            ),
+            cast_to=PublicAgentUpdateResponse,
+        )
+
+
+class AsyncPublicAgentResource(AsyncAPIResource):
+    @cached_property
+    def with_raw_response(self) -> AsyncPublicAgentResourceWithRawResponse:
+        """
+        This property can be used as a prefix for any HTTP method call to return
+        the raw response object instead of the parsed content.
+
+        For more information, see https://www.github.com/stainless-sdks/taskade-python#accessing-raw-response-data-eg-headers
+        """
+        return AsyncPublicAgentResourceWithRawResponse(self)
+
+    @cached_property
+    def with_streaming_response(self) -> AsyncPublicAgentResourceWithStreamingResponse:
+        """
+        An alternative to `.with_raw_response` that doesn't eagerly read the response body.
+
+        For more information, see https://www.github.com/stainless-sdks/taskade-python#with_streaming_response
+        """
+        return AsyncPublicAgentResourceWithStreamingResponse(self)
+
+    async def retrieve(
+        self,
+        agent_id: str,
+        *,
+        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
+        # The extra values given here take precedence over values defined on the client or passed to this method.
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> PublicAgentRetrieveResponse:
+        """
+        Get public agent
+
+        Args:
+          extra_headers: Send extra headers
+
+          extra_query: Add additional query parameters to the request
+
+          extra_body: Add additional JSON properties to the request
+
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        if not agent_id:
+            raise ValueError(f"Expected a non-empty value for `agent_id` but received {agent_id!r}")
+        return await self._get(
+            f"/agents/{agent_id}/public-agent",
+            options=make_request_options(
+                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+            ),
+            cast_to=PublicAgentRetrieveResponse,
+        )
+
+    async def update(
+        self,
+        agent_id: str,
+        *,
+        preferences: public_agent_update_params.Preferences,
+        # Use the following arguments if you need to pass additional parameters to the API that aren't available via kwargs.
+        # The extra values given here take precedence over values defined on the client or passed to this method.
+        extra_headers: Headers | None = None,
+        extra_query: Query | None = None,
+        extra_body: Body | None = None,
+        timeout: float | httpx.Timeout | None | NotGiven = NOT_GIVEN,
+    ) -> PublicAgentUpdateResponse:
+        """
+        Update public agent
+
+        Args:
+          extra_headers: Send extra headers
+
+          extra_query: Add additional query parameters to the request
+
+          extra_body: Add additional JSON properties to the request
+
+          timeout: Override the client-level default timeout for this request, in seconds
+        """
+        if not agent_id:
+            raise ValueError(f"Expected a non-empty value for `agent_id` but received {agent_id!r}")
+        return await self._patch(
+            f"/agents/{agent_id}/public-agent",
+            body=await async_maybe_transform(
+                {"preferences": preferences}, public_agent_update_params.PublicAgentUpdateParams
+            ),
+            options=make_request_options(
+                extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
+            ),
+            cast_to=PublicAgentUpdateResponse,
+        )
+
+
+class PublicAgentResourceWithRawResponse:
+    def __init__(self, public_agent: PublicAgentResource) -> None:
+        self._public_agent = public_agent
+
+        self.retrieve = to_raw_response_wrapper(
+            public_agent.retrieve,
+        )
+        self.update = to_raw_response_wrapper(
+            public_agent.update,
+        )
+
+
+class AsyncPublicAgentResourceWithRawResponse:
+    def __init__(self, public_agent: AsyncPublicAgentResource) -> None:
+        self._public_agent = public_agent
+
+        self.retrieve = async_to_raw_response_wrapper(
+            public_agent.retrieve,
+        )
+        self.update = async_to_raw_response_wrapper(
+            public_agent.update,
+        )
+
+
+class PublicAgentResourceWithStreamingResponse:
+    def __init__(self, public_agent: PublicAgentResource) -> None:
+        self._public_agent = public_agent
+
+        self.retrieve = to_streamed_response_wrapper(
+            public_agent.retrieve,
+        )
+        self.update = to_streamed_response_wrapper(
+            public_agent.update,
+        )
+
+
+class AsyncPublicAgentResourceWithStreamingResponse:
+    def __init__(self, public_agent: AsyncPublicAgentResource) -> None:
+        self._public_agent = public_agent
+
+        self.retrieve = async_to_streamed_response_wrapper(
+            public_agent.retrieve,
+        )
+        self.update = async_to_streamed_response_wrapper(
+            public_agent.update,
+        )
