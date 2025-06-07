@@ -1,6 +1,6 @@
 [project]
 name = "sin-taskade"
-version = "0.0.1-alpha.0"
+version = "1.0.0"
 description = "The official Python library for the taskade API"
 dynamic = ["readme"]
 license = "Apache-2.0"
