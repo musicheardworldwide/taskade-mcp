@@ -1,6 +1,6 @@
 [project]
-name = "taskade"
-version = "0.0.1-alpha.0"
+name = "sin-taskade"
+version = "1.0.0"
 description = "The official Python library for the taskade API"
 dynamic = ["readme"]
 license = "Apache-2.0"
@@ -34,8 +34,8 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/stainless-sdks/taskade-python"
-Repository = "https://github.com/stainless-sdks/taskade-python"
+Homepage = "https://github.com/musicheardworldwide/taskade-mcp"
+Repository = "https://github.com/musicheardworldwide/taskade-mcp"
 
 
 [tool.rye]
@@ -121,7 +121,7 @@ path = "README.md"
 [[tool.hatch.metadata.hooks.fancy-pypi-readme.substitutions]]
 # replace relative links with absolute links
 pattern = '\[(.+?)\]\(((?!https?://)\S+?)\)'
-replacement = '[\1](https://github.com/stainless-sdks/taskade-python/tree/main/\g<2>)'
+replacement = '[\1](https://github.com/musicheardworldwide/taskade-mcp/tree/main/\g<2>)'
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
