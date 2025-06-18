@@ -23,9 +23,7 @@ from pydantic import ValidationError
 
 from taskade import Taskade, AsyncTaskade, APIResponseValidationError
 from taskade._types import Omit
-from taskade._utils import maybe_transform
 from taskade._models import BaseModel, FinalRequestOptions
-from taskade._constants import RAW_RESPONSE_HEADER
 from taskade._exceptions import TaskadeError, APIStatusError, APITimeoutError, APIResponseValidationError
 from taskade._base_client import (
     DEFAULT_TIMEOUT,
@@ -35,7 +33,6 @@ from taskade._base_client import (
     DefaultAsyncHttpxClient,
     make_request_options,
 )
-from taskade.types.workspace_create_project_params import WorkspaceCreateProjectParams
 
 from .utils import update_env
 
@@ -713,44 +710,27 @@ class TestTaskade:
 
     @mock.patch("taskade._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
     @pytest.mark.respx(base_url=base_url)
-    def test_retrying_timeout_errors_doesnt_leak(self, respx_mock: MockRouter) -> None:
+    def test_retrying_timeout_errors_doesnt_leak(self, respx_mock: MockRouter, client: Taskade) -> None:
         respx_mock.post("/workspaces/workspaceId/projects").mock(
             side_effect=httpx.TimeoutException("Test timeout error")
         )
 
         with pytest.raises(APITimeoutError):
-            self.client.post(
-                "/workspaces/workspaceId/projects",
-                body=cast(
-                    object,
-                    maybe_transform(
-                        dict(content="REPLACE_ME", content_type="text/markdown"), WorkspaceCreateProjectParams
-                    ),
-                ),
-                cast_to=httpx.Response,
-                options={"headers": {RAW_RESPONSE_HEADER: "stream"}},
-            )
+            client.workspaces.with_streaming_response.create_project(
+                workspace_id="workspaceId", content="content", content_type="text/markdown"
+            ).__enter__()
 
         assert _get_open_connections(self.client) == 0
 
     @mock.patch("taskade._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
     @pytest.mark.respx(base_url=base_url)
-    def test_retrying_status_errors_doesnt_leak(self, respx_mock: MockRouter) -> None:
+    def test_retrying_status_errors_doesnt_leak(self, respx_mock: MockRouter, client: Taskade) -> None:
         respx_mock.post("/workspaces/workspaceId/projects").mock(return_value=httpx.Response(500))
 
         with pytest.raises(APIStatusError):
-            self.client.post(
-                "/workspaces/workspaceId/projects",
-                body=cast(
-                    object,
-                    maybe_transform(
-                        dict(content="REPLACE_ME", content_type="text/markdown"), WorkspaceCreateProjectParams
-                    ),
-                ),
-                cast_to=httpx.Response,
-                options={"headers": {RAW_RESPONSE_HEADER: "stream"}},
-            )
-
+            client.workspaces.with_streaming_response.create_project(
+                workspace_id="workspaceId", content="content", content_type="text/markdown"
+            ).__enter__()
         assert _get_open_connections(self.client) == 0
 
     @pytest.mark.parametrize("failures_before_success", [0, 2, 4])
@@ -1562,44 +1542,29 @@ class TestAsyncTaskade:
 
     @mock.patch("taskade._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
     @pytest.mark.respx(base_url=base_url)
-    async def test_retrying_timeout_errors_doesnt_leak(self, respx_mock: MockRouter) -> None:
+    async def test_retrying_timeout_errors_doesnt_leak(
+        self, respx_mock: MockRouter, async_client: AsyncTaskade
+    ) -> None:
         respx_mock.post("/workspaces/workspaceId/projects").mock(
             side_effect=httpx.TimeoutException("Test timeout error")
         )
 
         with pytest.raises(APITimeoutError):
-            await self.client.post(
-                "/workspaces/workspaceId/projects",
-                body=cast(
-                    object,
-                    maybe_transform(
-                        dict(content="REPLACE_ME", content_type="text/markdown"), WorkspaceCreateProjectParams
-                    ),
-                ),
-                cast_to=httpx.Response,
-                options={"headers": {RAW_RESPONSE_HEADER: "stream"}},
-            )
+            await async_client.workspaces.with_streaming_response.create_project(
+                workspace_id="workspaceId", content="content", content_type="text/markdown"
+            ).__aenter__()
 
         assert _get_open_connections(self.client) == 0
 
     @mock.patch("taskade._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
     @pytest.mark.respx(base_url=base_url)
-    async def test_retrying_status_errors_doesnt_leak(self, respx_mock: MockRouter) -> None:
+    async def test_retrying_status_errors_doesnt_leak(self, respx_mock: MockRouter, async_client: AsyncTaskade) -> None:
         respx_mock.post("/workspaces/workspaceId/projects").mock(return_value=httpx.Response(500))
 
         with pytest.raises(APIStatusError):
-            await self.client.post(
-                "/workspaces/workspaceId/projects",
-                body=cast(
-                    object,
-                    maybe_transform(
-                        dict(content="REPLACE_ME", content_type="text/markdown"), WorkspaceCreateProjectParams
-                    ),
-                ),
-                cast_to=httpx.Response,
-                options={"headers": {RAW_RESPONSE_HEADER: "stream"}},
-            )
-
+            await async_client.workspaces.with_streaming_response.create_project(
+                workspace_id="workspaceId", content="content", content_type="text/markdown"
+            ).__aenter__()
         assert _get_open_connections(self.client) == 0
 
     @pytest.mark.parametrize("failures_before_success", [0, 2, 4])
