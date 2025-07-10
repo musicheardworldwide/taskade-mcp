@@ -119,6 +119,14 @@ class Taskade(SyncAPIClient):
     @property
     @override
     def auth_headers(self) -> dict[str, str]:
+        return {**self._oauth_authorization_code, **self._personal_access_token}
+
+    @property
+    def _oauth_authorization_code(self) -> httpx.Auth | None:
+        raise NotImplementedError("This auth method has not been implemented yet.")
+
+    @property
+    def _personal_access_token(self) -> dict[str, str]:
         api_key = self.api_key
         return {"Authorization": f"Bearer {api_key}"}
 
@@ -299,6 +307,14 @@ class AsyncTaskade(AsyncAPIClient):
     @property
     @override
     def auth_headers(self) -> dict[str, str]:
+        return {**self._oauth_authorization_code, **self._personal_access_token}
+
+    @property
+    def _oauth_authorization_code(self) -> httpx.Auth | None:
+        raise NotImplementedError("This auth method has not been implemented yet.")
+
+    @property
+    def _personal_access_token(self) -> dict[str, str]:
         api_key = self.api_key
         return {"Authorization": f"Bearer {api_key}"}
 
