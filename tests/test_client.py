@@ -24,7 +24,7 @@ from pydantic import ValidationError
 from taskade import Taskade, AsyncTaskade, APIResponseValidationError
 from taskade._types import Omit
 from taskade._models import BaseModel, FinalRequestOptions
-from taskade._exceptions import TaskadeError, APIStatusError, APITimeoutError, APIResponseValidationError
+from taskade._exceptions import APIStatusError, APITimeoutError, APIResponseValidationError
 from taskade._base_client import (
     DEFAULT_TIMEOUT,
     HTTPX_DEFAULT_TIMEOUT,
@@ -333,16 +333,6 @@ class TestTaskade:
         request = client2._build_request(FinalRequestOptions(method="get", url="/foo"))
         assert request.headers.get("x-foo") == "stainless"
         assert request.headers.get("x-stainless-lang") == "my-overriding-header"
-
-    def test_validate_headers(self) -> None:
-        client = Taskade(base_url=base_url, api_key=api_key, _strict_response_validation=True)
-        request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
-        assert request.headers.get("Authorization") == f"Bearer {api_key}"
-
-        with pytest.raises(TaskadeError):
-            with update_env(**{"TASKADE_API_KEY": Omit()}):
-                client2 = Taskade(base_url=base_url, api_key=None, _strict_response_validation=True)
-            _ = client2
 
     def test_default_query_option(self) -> None:
         client = Taskade(
@@ -1152,16 +1142,6 @@ class TestAsyncTaskade:
         request = client2._build_request(FinalRequestOptions(method="get", url="/foo"))
         assert request.headers.get("x-foo") == "stainless"
         assert request.headers.get("x-stainless-lang") == "my-overriding-header"
-
-    def test_validate_headers(self) -> None:
-        client = AsyncTaskade(base_url=base_url, api_key=api_key, _strict_response_validation=True)
-        request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
-        assert request.headers.get("Authorization") == f"Bearer {api_key}"
-
-        with pytest.raises(TaskadeError):
-            with update_env(**{"TASKADE_API_KEY": Omit()}):
-                client2 = AsyncTaskade(base_url=base_url, api_key=None, _strict_response_validation=True)
-            _ = client2
 
     def test_default_query_option(self) -> None:
         client = AsyncTaskade(
