@@ -39,7 +39,7 @@ Homepage = "https://github.com/musicheardworldwide/taskade-mcp"
 Repository = "https://github.com/musicheardworldwide/taskade-mcp"
 
 [project.optional-dependencies]
-aiohttp = ["aiohttp", "httpx_aiohttp>=0.1.6"]
+aiohttp = ["aiohttp", "httpx_aiohttp>=0.1.8"]
 
 [tool.rye]
 managed = true
