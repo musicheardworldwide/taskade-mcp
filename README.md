@@ -82,7 +82,6 @@ pip install sin-taskade[aiohttp]
 Then you can enable it by instantiating the client with `http_client=DefaultAioHttpClient()`:
 
 ```python
-import os
 import asyncio
 from taskade import DefaultAioHttpClient
 from taskade import AsyncTaskade
@@ -90,7 +89,7 @@ from taskade import AsyncTaskade
 
 async def main() -> None:
     async with AsyncTaskade(
-        api_key=os.environ.get("TASKADE_API_KEY"),  # This is the default and can be omitted
+        api_key="My API Key",
         http_client=DefaultAioHttpClient(),
     ) as client:
         response = await client.workspaces.create_project(
