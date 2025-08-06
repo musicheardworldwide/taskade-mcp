@@ -1,6 +1,7 @@
 # Taskade Python API library
 
-[![PyPI version](https://img.shields.io/pypi/v/sin-taskade.svg)](https://pypi.org/project/sin-taskade/)
+<!-- prettier-ignore -->
+[![PyPI version](https://img.shields.io/pypi/v/sin-taskade.svg?label=pypi%20(stable))](https://pypi.org/project/sin-taskade/)
 
 The Taskade Python library provides convenient access to the Taskade REST API from any Python 3.8+
 application. The library includes type definitions for all request params and response fields,
@@ -39,11 +40,6 @@ response = client.workspaces.create_project(
 print(response.item)
 ```
 
-While you can provide an `api_key` keyword argument,
-we recommend using [python-dotenv](https://pypi.org/project/python-dotenv/)
-to add `TASKADE_API_KEY="My API Key"` to your `.env` file
-so that your API Key is not stored in source control.
-
 ## Async usage
 
 Simply import `AsyncTaskade` instead of `Taskade` and use `await` with each API call:
@@ -71,6 +67,41 @@ asyncio.run(main())
 ```
 
 Functionality between the synchronous and asynchronous clients is otherwise identical.
+
+### With aiohttp
+
+By default, the async client uses `httpx` for HTTP requests. However, for improved concurrency performance you may also use `aiohttp` as the HTTP backend.
+
+You can enable this by installing `aiohttp`:
+
+```sh
+# install from PyPI
+pip install sin-taskade[aiohttp]
+```
+
+Then you can enable it by instantiating the client with `http_client=DefaultAioHttpClient()`:
+
+```python
+import asyncio
+from taskade import DefaultAioHttpClient
+from taskade import AsyncTaskade
+
+
+async def main() -> None:
+    async with AsyncTaskade(
+        api_key="My API Key",
+        http_client=DefaultAioHttpClient(),
+    ) as client:
+        response = await client.workspaces.create_project(
+            workspace_id="REPLACE_ME",
+            content="REPLACE_ME",
+            content_type="text/markdown",
+        )
+        print(response.item)
+
+
+asyncio.run(main())
+```
 
 ## Using types
 
@@ -174,7 +205,7 @@ client.with_options(max_retries=5).workspaces.create_project(
 ### Timeouts
 
 By default requests time out after 1 minute. You can configure this with a `timeout` option,
-which accepts a float or an [`httpx.Timeout`](https://www.python-httpx.org/advanced/#fine-tuning-the-configuration) object:
+which accepts a float or an [`httpx.Timeout`](https://www.python-httpx.org/advanced/timeouts/#fine-tuning-the-configuration) object:
 
 ```python
 from taskade import Taskade

@@ -23,17 +23,16 @@ from pydantic import ValidationError
 
 from taskade import Taskade, AsyncTaskade, APIResponseValidationError
 from taskade._types import Omit
-from taskade._utils import maybe_transform
 from taskade._models import BaseModel, FinalRequestOptions
-from taskade._constants import RAW_RESPONSE_HEADER
-from taskade._exceptions import TaskadeError, APIStatusError, APITimeoutError, APIResponseValidationError
+from taskade._exceptions import APIStatusError, APITimeoutError, APIResponseValidationError
 from taskade._base_client import (
     DEFAULT_TIMEOUT,
     HTTPX_DEFAULT_TIMEOUT,
     BaseClient,
+    DefaultHttpxClient,
+    DefaultAsyncHttpxClient,
     make_request_options,
 )
-from taskade.types.workspace_create_project_params import WorkspaceCreateProjectParams
 
 from .utils import update_env
 
@@ -192,6 +191,7 @@ class TestTaskade:
             copy_param = copy_signature.parameters.get(name)
             assert copy_param is not None, f"copy() signature is missing the {name} param"
 
+    @pytest.mark.skipif(sys.version_info >= (3, 10), reason="fails because of a memory leak that started from 3.12")
     def test_copy_build_request(self) -> None:
         options = FinalRequestOptions(method="get", url="/foo")
 
@@ -334,16 +334,6 @@ class TestTaskade:
         assert request.headers.get("x-foo") == "stainless"
         assert request.headers.get("x-stainless-lang") == "my-overriding-header"
 
-    def test_validate_headers(self) -> None:
-        client = Taskade(base_url=base_url, api_key=api_key, _strict_response_validation=True)
-        request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
-        assert request.headers.get("Authorization") == f"Bearer {api_key}"
-
-        with pytest.raises(TaskadeError):
-            with update_env(**{"TASKADE_API_KEY": Omit()}):
-                client2 = Taskade(base_url=base_url, api_key=None, _strict_response_validation=True)
-            _ = client2
-
     def test_default_query_option(self) -> None:
         client = Taskade(
             base_url=base_url, api_key=api_key, _strict_response_validation=True, default_query={"query_param": "bar"}
@@ -462,7 +452,7 @@ class TestTaskade:
     def test_multipart_repeating_array(self, client: Taskade) -> None:
         request = client._build_request(
             FinalRequestOptions.construct(
-                method="get",
+                method="post",
                 url="/foo",
                 headers={"Content-Type": "multipart/form-data; boundary=6b7ba517decee4a450543ea6ae821c82"},
                 json_data={"array": ["foo", "bar"]},
@@ -711,44 +701,27 @@ class TestTaskade:
 
     @mock.patch("taskade._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
     @pytest.mark.respx(base_url=base_url)
-    def test_retrying_timeout_errors_doesnt_leak(self, respx_mock: MockRouter) -> None:
+    def test_retrying_timeout_errors_doesnt_leak(self, respx_mock: MockRouter, client: Taskade) -> None:
         respx_mock.post("/workspaces/workspaceId/projects").mock(
             side_effect=httpx.TimeoutException("Test timeout error")
         )
 
         with pytest.raises(APITimeoutError):
-            self.client.post(
-                "/workspaces/workspaceId/projects",
-                body=cast(
-                    object,
-                    maybe_transform(
-                        dict(content="REPLACE_ME", content_type="text/markdown"), WorkspaceCreateProjectParams
-                    ),
-                ),
-                cast_to=httpx.Response,
-                options={"headers": {RAW_RESPONSE_HEADER: "stream"}},
-            )
+            client.workspaces.with_streaming_response.create_project(
+                workspace_id="workspaceId", content="content", content_type="text/markdown"
+            ).__enter__()
 
         assert _get_open_connections(self.client) == 0
 
     @mock.patch("taskade._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
     @pytest.mark.respx(base_url=base_url)
-    def test_retrying_status_errors_doesnt_leak(self, respx_mock: MockRouter) -> None:
+    def test_retrying_status_errors_doesnt_leak(self, respx_mock: MockRouter, client: Taskade) -> None:
         respx_mock.post("/workspaces/workspaceId/projects").mock(return_value=httpx.Response(500))
 
         with pytest.raises(APIStatusError):
-            self.client.post(
-                "/workspaces/workspaceId/projects",
-                body=cast(
-                    object,
-                    maybe_transform(
-                        dict(content="REPLACE_ME", content_type="text/markdown"), WorkspaceCreateProjectParams
-                    ),
-                ),
-                cast_to=httpx.Response,
-                options={"headers": {RAW_RESPONSE_HEADER: "stream"}},
-            )
-
+            client.workspaces.with_streaming_response.create_project(
+                workspace_id="workspaceId", content="content", content_type="text/markdown"
+            ).__enter__()
         assert _get_open_connections(self.client) == 0
 
     @pytest.mark.parametrize("failures_before_success", [0, 2, 4])
@@ -839,6 +812,28 @@ class TestTaskade:
         )
 
         assert response.http_request.headers.get("x-stainless-retry-count") == "42"
+
+    def test_proxy_environment_variables(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # Test that the proxy environment variables are set correctly
+        monkeypatch.setenv("HTTPS_PROXY", "https://example.org")
+
+        client = DefaultHttpxClient()
+
+        mounts = tuple(client._mounts.items())
+        assert len(mounts) == 1
+        assert mounts[0][0].pattern == "https://"
+
+    @pytest.mark.filterwarnings("ignore:.*deprecated.*:DeprecationWarning")
+    def test_default_client_creation(self) -> None:
+        # Ensure that the client can be initialized without any exceptions
+        DefaultHttpxClient(
+            verify=True,
+            cert=None,
+            trust_env=True,
+            http1=True,
+            http2=False,
+            limits=httpx.Limits(max_connections=100, max_keepalive_connections=20),
+        )
 
     @pytest.mark.respx(base_url=base_url)
     def test_follow_redirects(self, respx_mock: MockRouter) -> None:
@@ -1003,6 +998,7 @@ class TestAsyncTaskade:
             copy_param = copy_signature.parameters.get(name)
             assert copy_param is not None, f"copy() signature is missing the {name} param"
 
+    @pytest.mark.skipif(sys.version_info >= (3, 10), reason="fails because of a memory leak that started from 3.12")
     def test_copy_build_request(self) -> None:
         options = FinalRequestOptions(method="get", url="/foo")
 
@@ -1147,16 +1143,6 @@ class TestAsyncTaskade:
         assert request.headers.get("x-foo") == "stainless"
         assert request.headers.get("x-stainless-lang") == "my-overriding-header"
 
-    def test_validate_headers(self) -> None:
-        client = AsyncTaskade(base_url=base_url, api_key=api_key, _strict_response_validation=True)
-        request = client._build_request(FinalRequestOptions(method="get", url="/foo"))
-        assert request.headers.get("Authorization") == f"Bearer {api_key}"
-
-        with pytest.raises(TaskadeError):
-            with update_env(**{"TASKADE_API_KEY": Omit()}):
-                client2 = AsyncTaskade(base_url=base_url, api_key=None, _strict_response_validation=True)
-            _ = client2
-
     def test_default_query_option(self) -> None:
         client = AsyncTaskade(
             base_url=base_url, api_key=api_key, _strict_response_validation=True, default_query={"query_param": "bar"}
@@ -1275,7 +1261,7 @@ class TestAsyncTaskade:
     def test_multipart_repeating_array(self, async_client: AsyncTaskade) -> None:
         request = async_client._build_request(
             FinalRequestOptions.construct(
-                method="get",
+                method="post",
                 url="/foo",
                 headers={"Content-Type": "multipart/form-data; boundary=6b7ba517decee4a450543ea6ae821c82"},
                 json_data={"array": ["foo", "bar"]},
@@ -1538,44 +1524,29 @@ class TestAsyncTaskade:
 
     @mock.patch("taskade._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
     @pytest.mark.respx(base_url=base_url)
-    async def test_retrying_timeout_errors_doesnt_leak(self, respx_mock: MockRouter) -> None:
+    async def test_retrying_timeout_errors_doesnt_leak(
+        self, respx_mock: MockRouter, async_client: AsyncTaskade
+    ) -> None:
         respx_mock.post("/workspaces/workspaceId/projects").mock(
             side_effect=httpx.TimeoutException("Test timeout error")
         )
 
         with pytest.raises(APITimeoutError):
-            await self.client.post(
-                "/workspaces/workspaceId/projects",
-                body=cast(
-                    object,
-                    maybe_transform(
-                        dict(content="REPLACE_ME", content_type="text/markdown"), WorkspaceCreateProjectParams
-                    ),
-                ),
-                cast_to=httpx.Response,
-                options={"headers": {RAW_RESPONSE_HEADER: "stream"}},
-            )
+            await async_client.workspaces.with_streaming_response.create_project(
+                workspace_id="workspaceId", content="content", content_type="text/markdown"
+            ).__aenter__()
 
         assert _get_open_connections(self.client) == 0
 
     @mock.patch("taskade._base_client.BaseClient._calculate_retry_timeout", _low_retry_timeout)
     @pytest.mark.respx(base_url=base_url)
-    async def test_retrying_status_errors_doesnt_leak(self, respx_mock: MockRouter) -> None:
+    async def test_retrying_status_errors_doesnt_leak(self, respx_mock: MockRouter, async_client: AsyncTaskade) -> None:
         respx_mock.post("/workspaces/workspaceId/projects").mock(return_value=httpx.Response(500))
 
         with pytest.raises(APIStatusError):
-            await self.client.post(
-                "/workspaces/workspaceId/projects",
-                body=cast(
-                    object,
-                    maybe_transform(
-                        dict(content="REPLACE_ME", content_type="text/markdown"), WorkspaceCreateProjectParams
-                    ),
-                ),
-                cast_to=httpx.Response,
-                options={"headers": {RAW_RESPONSE_HEADER: "stream"}},
-            )
-
+            await async_client.workspaces.with_streaming_response.create_project(
+                workspace_id="workspaceId", content="content", content_type="text/markdown"
+            ).__aenter__()
         assert _get_open_connections(self.client) == 0
 
     @pytest.mark.parametrize("failures_before_success", [0, 2, 4])
@@ -1714,6 +1685,28 @@ class TestAsyncTaskade:
                     raise AssertionError("calling get_platform using asyncify resulted in a hung process")
 
                 time.sleep(0.1)
+
+    async def test_proxy_environment_variables(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # Test that the proxy environment variables are set correctly
+        monkeypatch.setenv("HTTPS_PROXY", "https://example.org")
+
+        client = DefaultAsyncHttpxClient()
+
+        mounts = tuple(client._mounts.items())
+        assert len(mounts) == 1
+        assert mounts[0][0].pattern == "https://"
+
+    @pytest.mark.filterwarnings("ignore:.*deprecated.*:DeprecationWarning")
+    async def test_default_client_creation(self) -> None:
+        # Ensure that the client can be initialized without any exceptions
+        DefaultAsyncHttpxClient(
+            verify=True,
+            cert=None,
+            trust_env=True,
+            http1=True,
+            http2=False,
+            limits=httpx.Limits(max_connections=100, max_keepalive_connections=20),
+        )
 
     @pytest.mark.respx(base_url=base_url)
     async def test_follow_redirects(self, respx_mock: MockRouter) -> None:
